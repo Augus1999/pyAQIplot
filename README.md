@@ -18,7 +18,7 @@ example:
 
 ### plot all
 ```
-fm.data.gro(title='your title')
+fm.gro(title='your title')
 ```
 example:
 
