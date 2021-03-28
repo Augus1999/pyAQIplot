@@ -26,7 +26,7 @@ example:
 
 ### statistics
 ```
-fm.data.statistics()
+fm.statistics()
 ```
 output is like:
 ```
