@@ -5,7 +5,8 @@ from decimal import Decimal
 
 
 class IntervalS:
-    def __init__(self, _interval: str):
+    def __init__(self,
+                 _interval: str):
         # R = IntervalS('(-inf, inf)')
         self.left_c = _interval[0]
         self.right_c = _interval[-1]
@@ -21,7 +22,8 @@ class IntervalS:
         if self.left_b >= self.right_b:
             raise ValueError
 
-    def contains(self, n):
+    def contains(self,
+                 n):
         num = Decimal(str(n))
         con1, con2, con3 = False, True, True
         if self.left_b <= num <= self.right_b:
@@ -63,3 +65,11 @@ _classes = [
     IntervalS('(300, 400]'),
     IntervalS('(400, inf)')
 ]
+defeat_settings = {
+    "scatter size": 1,
+    "y label size": 15,
+    "title size": 15,
+    "subtitle size": 20,
+    "date format": "%Y-%m-%d",
+    "frequency": "5m"
+}

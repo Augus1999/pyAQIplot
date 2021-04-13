@@ -7,30 +7,37 @@ import subprocess as sp
 import matplotlib.pyplot as plt
 import matplotlib.dates as m_date
 from PIL import Image
+from .colorbar import create_colorbar
 from datetime import datetime
-from .structure import rgb, _classes
+from .structure import (
+    rgb,
+    _classes,
+    defeat_settings,
+)
 
 """
 Note: the size of words in the output figure will be affected by
       the scaling set in Windows. Scaling from 100% to 140% looks
       the same; >= 150% will make the figure look weird.
-      Or change settings in settings.py.
+      Or change settings in settings.json.
 """
 # 用来正常显示中文和日文标签
 plt.rcParams['font.sans-serif'] = ['SimHei']
 # 用来正常显示负号
 plt.rcParams['axes.unicode_minus'] = False
-img = Image.open(
-    os.path.join('AQIFrame', 'colorbar.png'),
-)
 
 
-def _settings():
+def _settings(set_file: str):
+    """
+    load settings from JSON file
+
+    :param set_file: settings.json
+    :return: a tuple of settings parameter
+    """
     with open(
-            os.path.join(
-                'AQIFrame',
-                'settings.json',
-            ),
+            file=set_file,
+            mode='r',
+            encoding='utf-8',
     ) as f:
         settings = json.load(f)
     s_size = settings["scatter size"]
@@ -82,33 +89,33 @@ def _data(file_name: str):
     data_pm25 = data_pm25.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
+    ).fillna(-15)
     data_pm10 = data_pm10.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
+    ).fillna(-15)
     data_o3 = data_o3.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
+    ).fillna(-15)
     data_no2 = data_no2.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
+    ).fillna(-15)
     data_so2 = data_so2.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
+    ).fillna(-15)
     data_co = data_co.apply(
         pd.to_numeric,
         errors='coerce',
-    ).fillna(-15.0)
-    data_pm25 = data_pm25.dropna().values.astype('float32')
-    data_pm10 = data_pm10.dropna().values.astype('float32')
-    data_o3 = data_o3.dropna().values.astype('float32')
-    data_no2 = data_no2.dropna().values.astype('float32')
-    data_so2 = data_so2.dropna().values.astype('float32')
-    data_co = data_co.dropna().values.astype('float32')
+    ).fillna(-15)
+    data_pm25 = data_pm25.dropna().values.astype('int')
+    data_pm10 = data_pm10.dropna().values.astype('int')
+    data_o3 = data_o3.dropna().values.astype('int')
+    data_no2 = data_no2.dropna().values.astype('int')
+    data_so2 = data_so2.dropna().values.astype('int')
+    data_co = data_co.dropna().values.astype('int')
     return (
         dates,
         data_pm25,
@@ -148,7 +155,7 @@ def _split(data: _data):
             if c.contains(item):
                 _g[key].append(item)
             else:
-                _g[key].append(-15.0)
+                _g[key].append(-15)
     return _g
 
 
@@ -178,9 +185,19 @@ def _plot(date: _data,
     _data_ = _split(data)
     xd = [datetime.strptime(d, '%Y/%m/%d').date() for d in date]
     ax = plt.gca()
-    ax.xaxis.set_major_formatter(m_date.DateFormatter(date_format))
-    ax.xaxis.set_major_locator(m_date.DayLocator())
-    plt.xticks(pd.date_range(date[0], date[-1], freq=frequency))
+    ax.xaxis.set_major_formatter(
+        m_date.DateFormatter(date_format),
+    )
+    ax.xaxis.set_major_locator(
+        m_date.DayLocator(),
+    )
+    plt.xticks(
+        pd.date_range(
+            date[0],
+            date[-1],
+            freq=frequency,
+        ),
+    )
     plt.scatter(xd, _data_[0], color=rgb[0], s=s_size)
     plt.scatter(xd, _data_[1], color=rgb[1], s=s_size)
     plt.scatter(xd, _data_[2], color=rgb[2], s=s_size)
@@ -194,8 +211,14 @@ def _plot(date: _data,
     plt.scatter(xd, _data_[10], color=rgb[10], s=s_size)
     plt.ylim(0, )
     plt.gcf().autofmt_xdate()
-    plt.ylabel('AQI', fontsize=y_label_size)
-    plt.title(title, fontsize=title_size)
+    plt.ylabel(
+        'AQI',
+        fontsize=y_label_size,
+    )
+    plt.title(
+        title,
+        fontsize=title_size,
+    )
     if show:
         plt.show()
     if not show:
@@ -223,9 +246,44 @@ def sta(data: _data):
 
 
 class Frame:
-    def __init__(self, file_pass):
-        self.date = _data(file_pass)[0]
-        self.data = _data(file_pass)[1:]
+    def __init__(self,
+                 file_path: str,
+                 start_time=None,
+                 end_time=None):
+        self.date = _data(file_path)[0]
+        self.data = _data(file_path)[1:]
+        self.set_file = file_path+'-settings.json'
+        self.colorbar_file = os.path.join(
+            os.path.dirname(file_path),
+            'colorbar.png',
+        )
+        if not os.path.exists(self.set_file):
+            # create -settings.json file with
+            # defeat settings parameters
+            with open(
+                file=self.set_file,
+                mode='w',
+                encoding='utf-8',
+            ) as o:
+                json.dump(
+                    defeat_settings,
+                    o,
+                    sort_keys=True,
+                    indent=4,
+                    separators=(",", ": "),
+                )
+        if (start_time and end_time) is not None:
+            self.s_t = self.date.index(start_time)
+            self.e_t = self.date.index(end_time)
+            self.date = self.date[self.s_t:self.e_t]
+            self.data = (
+                self.data[0][self.s_t:self.e_t],
+                self.data[1][self.s_t:self.e_t],
+                self.data[2][self.s_t:self.e_t],
+                self.data[3][self.s_t:self.e_t],
+                self.data[4][self.s_t:self.e_t],
+                self.data[5][self.s_t:self.e_t],
+            )
 
     def _set(self):
         (
@@ -235,11 +293,11 @@ class Frame:
             self.subtitle_size,
             self.date_format,
             self.frequency,
-        ) = _settings()
+        ) = _settings(self.set_file)
 
     def ind(self,
-            title,
-            select=1,
+            title: str,
+            select: int = 1,
             color_bar=False):
         """
 
@@ -250,11 +308,21 @@ class Frame:
                        select=3 => NO2
                        select=4 => SO2
                        select=5 => CO
-        :param color_bar: color_bar=True => show the colour bar
+        :param color_bar: color_bar=True =>
+                          show the colour bar
         :return: None
         """
         self._set()
         if color_bar:
+            if not os.path.exists(
+                    self.colorbar_file,
+            ):
+                create_colorbar(
+                    self.colorbar_file,
+                )
+            img = Image.open(
+                self.colorbar_file,
+            )
             plt.subplot(2, 1, 1), _plot(
                 self.date,
                 self.data[select],
@@ -287,7 +355,7 @@ class Frame:
             )
 
     def gro(self,
-            title):
+            title: str):
         """
 
         :param title: the title of the plot
@@ -358,11 +426,14 @@ class Frame:
             title,
             fontsize=self.subtitle_size,
         )
-        # plt.tight_layout()  # do not use this under Python > 3.8.3
+        # do not use this under Python > 3.8.3
+        # plt.tight_layout()
         figure = plt.get_current_fig_manager()
         try:  # full size show
             # if backend is Qt
-            figure.resize(*figure.window.maxsize())
+            figure.resize(
+                *figure.window.maxsize(),
+            )
         except AttributeError:
             try:
                 # if backend is WX
@@ -523,14 +594,13 @@ class Frame:
 
     def settings(self):
         sp.call(
-            'explorer '+os.path.join(
-                'AQIFrame',
-                'settings.json',
-            ),
+            'explorer '+self.set_file,
             shell=True,
         )
         self._set()
 
 
 if __name__ == '__main__':
-    print('This is a library file.')
+    print(
+        'This is a library file.',
+    )
