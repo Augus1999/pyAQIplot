@@ -43,6 +43,7 @@ def create_colorbar(file_name: str):
         ),
         cax=ax,
         orientation='horizontal',
+        spacing='proportional',
     )
     plt.savefig(
         file_name,
