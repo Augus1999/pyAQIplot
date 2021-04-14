@@ -5,9 +5,10 @@ plot AQI data (.csv files downloaded from [https://waqi.info/](https://waqi.info
 ```
 python setup.py install
 ```
- or ```
- pip install pyAQIplot
- ```
+or 
+```
+pip install pyAQIplot
+```
 
 ## Usage
 ### load package
