@@ -1,10 +1,22 @@
 # pyAQIplot
 plot AQI data (.csv files downloaded from [https://waqi.info/](https://waqi.info/))
 
+## Install
+```
+python setup.py install
+```
+ or ```
+ pip install pyAQIplot
+ ```
+
 ## Usage
 ### load package
 ```
-from AQIFrame import Frame
+from pyAQIplot import Frame
+import matplotlib
+matplotlib.use('qt5Agg')
+
+
 file = 'xxx_div\\yyy_filename.csv'
 fm = Frame(file)
 ```
