@@ -65,21 +65,27 @@ def _data(file_name: str):
     :return: 7 groups of data from the CSV file
     """
     dates = []
-    date = pd.read_csv(
+    raw_data = pd.read_csv(
         file_name,
-        usecols=[0],
-    ).sort_values(
-        by='date',
-        ascending=True,
-    ).values
-    r_data = pd.read_csv(
-        file_name,
-    ).sort_values(
+        encoding='utf-8',
+    )
+    _date = pd.to_datetime(
+        raw_data.date,
+        format='%Y/%m/%d',
+    )
+    _date = _date.apply(
+        lambda x: datetime.strftime(x, '%Y/%m/%d'),
+    )
+    raw_data.date = _date
+    r_data = raw_data.sort_values(
         by='date',
         ascending=True,
     )
+    date = raw_data['date'].sort_values(
+        ascending=True,
+    ).values
     for date_i in date:
-        dates.append(str(date_i[0]))
+        dates.append(date_i)
     data_pm25 = r_data[' pm25']
     data_pm10 = r_data[' pm10']
     data_o3 = r_data[' o3']
